@@ -48,17 +48,16 @@ Forcast_1hour_rainfall.py 為爬蟲當前時刻二十分鐘前的雷達回波圖
 以201609271130之時刻圖像作說明
 1. 雨量分布圖(RA)
 
-![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271130_RA.png)
+![image_RA](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RA.png)
 
 2. 雷達回波圖(RD)
 
-![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271130_RD.png)
+![image_RD](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RD.png)
 
 3. 紅外線雲圖(IR)
 
-![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271130_IR.png)
+![image_IR](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_IR.png)
 
 4. 預測出來的雨量分布圖 (RA+RD+IR)
 
-![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271030_t%2B1_predict.png)
-
+![image_pred](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271030_t%2B1_predict.png)
