@@ -1,15 +1,14 @@
-# Forecast-typhoon-rainfall-Unet
+# Predicting-Typhoon-Rainfall
 預測颱風時期降雨量
-透過雨量分布圖(RA)、雷達回波圖(RD)、紅外線雲圖(IR)等影像資料預測颱風侵襲期間的降雨量
+透過結合雨量分布圖(RA)、雷達回波圖(RD)、紅外線雲圖(IR)等影像資料預測颱風侵襲期間的降雨量
 
 主要有三種模型分別為U-net、FCN、PSPNet，其中以U-net模型表現較佳
 
 在圖像融合的部分是採用多通道的概念將圖片做疊加
 
 ## 主要環境
-keras == 2.2.5
+tensorflow ~= 2.8.0
 
-tensorflow-gpu == 1.14.0
 
 ## 前置說明
 請先將database.zip解壓縮到同一資料中，database資料夾中包含訓練與驗證用的資料
@@ -49,17 +48,17 @@ Forcast_1hour_rainfall.py 為爬蟲當前時刻二十分鐘前的雷達回波圖
 以201609271130之時刻圖像作說明
 1. 雨量分布圖(RA)
 
-![image](https://github.com/Jwander0820/Forecast-typhoon-rainfall-Unet/blob/main/img/201609271130_RA.png)
+![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271130_RA.png)
 
 2. 雷達回波圖(RD)
 
-![image](https://github.com/Jwander0820/Forecast-typhoon-rainfall-Unet/blob/main/img/201609271130_RD.png)
+![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271130_RD.png)
 
 3. 紅外線雲圖(IR)
 
-![image](https://github.com/Jwander0820/Forecast-typhoon-rainfall-Unet/blob/main/img/201609271130_IR.png)
+![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271130_IR.png)
 
 4. 預測出來的雨量分布圖 (RA+RD+IR)
 
-![image](https://github.com/Jwander0820/Forecast-typhoon-rainfall-Unet/blob/main/img/201609271030_t%2B1_predict.png)
+![image](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/main/img/201609271030_t%2B1_predict.png)
 
