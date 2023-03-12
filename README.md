@@ -9,8 +9,29 @@
 ## 主要環境
 tensorflow ~= 2.8.0
 
+### 示意圖
+以201609271130之時刻圖像作說明
+1. 雨量分布圖(RA)
 
-## 前置說明
+![image_RA](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RA.png)
+
+2. 雷達回波圖(RD)
+
+![image_RD](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RD.png)
+
+3. 紅外線雲圖(IR)
+
+![image_IR](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_IR.png)
+
+4. 預測出來的雨量分布圖 (RA+RD+IR)
+
+![image_pred](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271030_t%2B1_predict.png)
+
+
+---
+暫不在此提供database.zip資料集，因此運行example.ipynb、train.ipynb可能會產生問題
+
+## ~~前置說明~~
 請先將database.zip解壓縮到同一資料中，database資料夾中包含訓練與驗證用的資料
 1. 主要包含雨量分布圖(RA)、雷達回波圖(RD)、紅外線雲圖(IR)、經緯度代表(GI) 這四種資料
 
@@ -33,31 +54,14 @@ tensorflow ~= 2.8.0
 4. val_label_RA_colorimage資料夾則存放驗證資料的彩色雨量分布圖，用於視覺化比較與預測結果的差異
 
 ## 訓練模型
-訓練模型的流程可以參考 train.ipynb
+訓練模型的流程可以參考 train.ipynb (需手動建立output資料夾)
+
+建議從Unet5開始訓練，Unet3表現差，容易產生全部都是空值的問題
 
 單純測試範例則可以參考 example.ipynb
 
-Forcast_1hour_rainfall.py 為爬蟲當前時刻二十分鐘前的雷達回波圖、紅外線雲圖 <br>
+predict_1hour_rainfall.py 為爬蟲當前時刻二十分鐘前的雷達回波圖、紅外線雲圖 <br>
 並將其裁切縮放至128x128大小的圖像，丟到預訓練的模型中，嘗試預測雨量分布情形 <br>
 但因為訓練的資料(颱風資料)和爬蟲下來的一般雷達回波圖和紅外線雲圖有差異，(淺藍底vs白底、不同的框線)
 所以導致預測的結果為空白的情況，也可能因為預訓練的模型較淺層較小型所以預測表現自然也不佳，
 若要改善一般預測的情況可能需要重新訓練模型
-
-
-### 示意圖
-以201609271130之時刻圖像作說明
-1. 雨量分布圖(RA)
-
-![image_RA](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RA.png)
-
-2. 雷達回波圖(RD)
-
-![image_RD](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RD.png)
-
-3. 紅外線雲圖(IR)
-
-![image_IR](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_IR.png)
-
-4. 預測出來的雨量分布圖 (RA+RD+IR)
-
-![image_pred](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271030_t%2B1_predict.png)
