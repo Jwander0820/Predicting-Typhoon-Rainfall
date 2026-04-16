@@ -1,7 +1,8 @@
 import tensorflow as tf
 import numpy as np
-from keras.layers import *
-from keras.models import *
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import *
+from tensorflow.keras.models import *
 
 from nets.mobilenetv2 import get_mobilenet_encoder
 from nets.resnet50 import get_resnet50_encoder
@@ -12,7 +13,7 @@ MERGE_AXIS = -1
 def resize_images(args):
     x = args[0]
     y = args[1]
-    return tf.image.resize_images(x, (K.int_shape(y)[1], K.int_shape(y)[2]), align_corners=True)
+    return tf.image.resize(x, (K.int_shape(y)[1], K.int_shape(y)[2]), method="bilinear")
 
 def pool_block(feats, pool_factor, out_channel):
     h = K.int_shape(feats)[1]

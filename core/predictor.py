@@ -1,58 +1,66 @@
-import glob
-from utils.metrics import *  # 調用自訂義的評價函數
-from utils.model_output import *
+"""Backward-compatible predictor wrapper.
+
+舊版程式會從 `core.predictor` import `Predictor`。重構後主要邏輯已移到
+`typhoon_rainfall.inference`，但保留這個檔案可讓既有 notebook 或腳本
+不必一次全部改寫。
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+
+from typhoon_rainfall.config import DataConfig, ModelConfig, PredictConfig
+from typhoon_rainfall.inference.predictor import RainfallPredictor
 
 
 class Predictor:
-    def __init__(self, RD=False, IR=False, RA=False, GI=False, shift=1, choose_model='Unet3',
-                 interval='EWB01', num_classes=100, blend=False):
-        self.RD = RD
-        self.IR = IR
-        self.RA = RA
-        self.GI = GI
-        self.shift = shift
-        self.choose_model = choose_model
-        self.interval = interval
-        self.num_classes = num_classes
-        self.blend = blend
-        self.model_path = self._get_last_checkpoint()
-        self.model_image_size = self._get_model_image_size()
+    """Legacy facade around `RainfallPredictor`."""
 
-        self._create_unet_model()  # 呼叫函數建立unet
-
-    def _get_last_checkpoint(self):
-        checkpoint = glob.glob('./checkpoint/*.h5')
-        for last_checkpoint in checkpoint:  # 取得最近一次的ckpt
-            None
-        return last_checkpoint
-
-    def _get_model_image_size(self):
-        if self.RD == True and self.IR == False and self.RA == False:  # RD
-            model_image_size = [128, 128, 3]
-        elif self.RD == False and self.IR == False and self.RA == True:  # RA
-            model_image_size = [128, 128, 3]
-        elif self.RD == False and self.IR == True and self.RA == False:  # IR
-            model_image_size = [128, 128, 3]
-        elif self.RD == True and self.IR == True and self.RA == False:  # RD+IR
-            model_image_size = [128, 128, 4]
-        elif self.RD == True and self.IR == False and self.RA == True:  # RD+RA
-            model_image_size = [128, 128, 6]
-        elif self.RD == False and self.IR == True and self.RA == True:  # IR+RA
-            model_image_size = [128, 128, 4]
-        elif self.RD == True and self.IR == True and self.RA == True:  # RD+IR+RA
-            model_image_size = [128, 128, 7]
-        if self.GI:
-            model_image_size[2] += 2  # channel+2，GI加在最後一層
-        return model_image_size
-
-    def _create_unet_model(self):
-        self.unet = Unet(model_path=self.model_path, model_image_size=self.model_image_size,
-                         num_classes=self.num_classes, blend=self.blend, RD=self.RD, IR=self.IR,
-                         GI=self.GI, RA=self.RA, choose_model=self.choose_model)
+    def __init__(
+        self,
+        RD: bool = False,
+        IR: bool = False,
+        RA: bool = False,
+        GI: bool = False,
+        shift: int = 1,
+        choose_model: str = "Unet3",
+        interval: str = "EWB01",
+        num_classes: int = 100,
+        blend: bool = False,
+        checkpoint_path: Optional[str] = None,
+    ) -> None:
+        """Translate legacy constructor flags into the new config objects."""
+        data_config = DataConfig(
+            interval=interval,
+            shift=shift,
+            use_rd=RD,
+            use_ir=IR,
+            use_ra=RA,
+            use_gi=GI,
+        )
+        model_config = ModelConfig(
+            name=choose_model,
+            num_classes=num_classes,
+            checkpoint_dir=Path("checkpoint"),
+            checkpoint_path=Path(checkpoint_path) if checkpoint_path else None,
+        )
+        predict_config = PredictConfig(blend=blend)
+        self.predictor = RainfallPredictor(data_config, model_config, predict_config)
 
     def predict(self, RD_image, IR_image, RA_image):
-        r_label = self.unet.detect_image_merge_label(RD_image, IR_image, RA_image)
-        return r_label
+        """Run prediction using legacy RD/IR/RA positional arguments."""
+        normalized_ra = None
+        if RA_image is not None and not (isinstance(RA_image, (int, float)) and RA_image == 0):
+            normalized_ra = RA_image
+        return self.predictor.predict_modal_images(
+            rd_image=RD_image,
+            ir_image=IR_image,
+            ra_image=normalized_ra,
+        )
 
     def save_prediction(self, r_label, filename):
-        np.savetxt(filename, r_label, delimiter=",", fmt='%d')
+        """Save prediction labels as integer CSV, matching old behavior."""
+        np.savetxt(filename, r_label, delimiter=",", fmt="%d")

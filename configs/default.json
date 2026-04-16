@@ -1,0 +1,39 @@
+{
+  "data": {
+    "dataset_root": "database",
+    "image_size": [
+      128,
+      128
+    ],
+    "interval": "EWB01",
+    "shift": 1,
+    "use_rd": true,
+    "use_ir": true,
+    "use_ra": false,
+    "use_gi": false
+  },
+  "model": {
+    "name": "Unet3",
+    "num_classes": 100,
+    "checkpoint_dir": "checkpoint",
+    "checkpoint_path": null
+  },
+  "train": {
+    "epochs": 100,
+    "batch_size": 8,
+    "validation_batch_size": 1,
+    "learning_rate": 0.0001,
+    "use_focal_loss": false,
+    "checkpoint_dir": "checkpoint",
+    "logs_dir": "logs",
+    "output_dir": "output"
+  },
+  "predict": {
+    "output_dir": "output",
+    "prediction_array_dir": "output/predict_array",
+    "prediction_plot_dir": "output/predict",
+    "blend": false,
+    "source_split": "val",
+    "limit": null
+  }
+}

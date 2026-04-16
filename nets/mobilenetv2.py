@@ -1,9 +1,10 @@
-from keras import layers
-from keras.activations import relu
-from keras.layers import (Activation, Add, BatchNormalization, Concatenate,
-                          Conv2D, DepthwiseConv2D, Dropout,
-                          GlobalAveragePooling2D, Input, Lambda, ZeroPadding2D)
-from keras.models import Model
+from tensorflow.keras import layers
+from tensorflow.keras.activations import relu
+from tensorflow.keras.layers import (Activation, Add, BatchNormalization,
+                                     Concatenate, Conv2D, DepthwiseConv2D,
+                                     Dropout, GlobalAveragePooling2D, Input,
+                                     Lambda, ZeroPadding2D)
+from tensorflow.keras.models import Model
 
 
 def _make_divisible(v, divisor, min_value=None):
@@ -18,7 +19,7 @@ def relu6(x):
     return relu(x, max_value=6)
 
 def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, skip_connection, rate=1):
-    in_channels = inputs.shape[-1].value
+    in_channels = int(inputs.shape[-1])
     pointwise_filters = _make_divisible(int(filters * alpha), 8)
     prefix = 'expanded_conv_{}_'.format(block_id)
 

@@ -1,6 +1,5 @@
-from keras.models import *
-from keras.layers import *
-from keras.optimizers import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.models import *
 
 
 
