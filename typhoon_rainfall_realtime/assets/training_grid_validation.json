@@ -1,0 +1,64 @@
+{
+  "calibration": "176 train RD median; all 56 val RD excluded",
+  "line_order": [
+    "120E",
+    "122E",
+    "24N",
+    "22N"
+  ],
+  "line_pixels": [
+    24.0,
+    99.0,
+    48.54890544628288,
+    123.51490067777983
+  ],
+  "bbox_outer_wsen": [
+    119.34666666666666,
+    21.89368248070571,
+    122.76,
+    25.30856411082968
+  ],
+  "holdout_count": 56,
+  "holdout_max_abs_px": [
+    0.002157112311905962,
+    0.0745251849746893,
+    0.17121035322022493,
+    0.1881182936885324
+  ],
+  "holdout_p95_abs_px": [
+    3.552713678800501e-15,
+    1.4210854715202004e-14,
+    0.08043206893042942,
+    0.10593681674687616
+  ],
+  "source_figure_holdouts": [
+    {
+      "line": "118E",
+      "source_figure_pixel": 71.46840350851703,
+      "mapped_pixel": -50.9721630191184,
+      "geo_prediction": -51.0,
+      "residual_px": 0.027836980881602358
+    },
+    {
+      "line": "124E",
+      "source_figure_pixel": 687.0669983574966,
+      "mapped_pixel": 173.58094217349583,
+      "geo_prediction": 174.0,
+      "residual_px": -0.4190578265041722
+    },
+    {
+      "line": "26N",
+      "source_figure_pixel": 122.44560675932728,
+      "mapped_pixel": -26.443869221506638,
+      "geo_prediction": -26.417089785214067,
+      "residual_px": -0.02677943629257129
+    },
+    {
+      "line": "20N",
+      "source_figure_pixel": 739.0,
+      "mapped_pixel": 198.21109718120627,
+      "geo_prediction": 198.48089590927677,
+      "residual_px": -0.2697987280704979
+    }
+  ]
+}

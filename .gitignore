@@ -172,3 +172,6 @@ dmypy.json
 ## except to ignore
 !/data/*
 /checkpoint/*
+
+# Live plugin snapshots and generated manifests (may be large).
+/output/realtime/

@@ -23,6 +23,16 @@
 - 離線推論
 - 實驗性即時氣象圖 crawler 推論
 
+另提供獨立的[即時預測外掛](docs/realtime-plugin.md)，使用現行中央氣象署免登入圖源，沿用既有模型、權重及推論 API：
+
+```bash
+python run_realtime.py fetch
+python run_realtime.py predict
+python run_realtime.py rainfall --hours 6
+```
+
+`fetch` 只抓圖及前處理；`predict` 執行一次 RD＋IR 的 `t+1` 預測；`rainfall` 匯出全臺近期逐時測站雨量，並以獨立 IDW 算法產生逐小時 RA 數值、標籤及彩色圖。原有訓練、評估、CLI 和舊 crawler 保持原狀。
+
 ## 環境版本
 
 本專案以 TensorFlow `2.9.1` 為固定基準，請不要任意升級 TensorFlow 主版本，避免影響舊 `.h5` 權重載入與研究結果重現。

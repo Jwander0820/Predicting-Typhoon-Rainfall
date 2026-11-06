@@ -1,0 +1,3 @@
+# Optional realtime alignment dependencies; keep the thesis runtime unchanged.
+-r requirement.txt
+pyproj==3.6.1

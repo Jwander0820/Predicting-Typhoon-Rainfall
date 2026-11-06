@@ -9,7 +9,7 @@ from typhoon_rainfall.inference.checkpoints import preferred_checkpoint_path, re
 class CheckpointTests(unittest.TestCase):
     def test_preferred_checkpoint_path(self):
         path = preferred_checkpoint_path(Path("checkpoint"), "Unet5")
-        self.assertEqual(str(path), "checkpoint/Unet5_val_min_RMSE.h5")
+        self.assertEqual(path, Path("checkpoint") / "Unet5_val_min_RMSE.h5")
 
     def test_resolve_checkpoint_prefers_named_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
