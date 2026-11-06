@@ -40,7 +40,7 @@ class PipelineTests(unittest.TestCase):
                 self.assertEqual(rd.mode, "RGB")
                 self.assertEqual(ir.mode, "L")
                 self.assertEqual(rd.size, (128, 128))
-                merged = merge_modal_arrays(InputModes.from_data_config(DataConfig()), 100,
+                merged = merge_modal_arrays(InputModes.from_data_config(DataConfig(use_ra=False, use_gi=False)), 100,
                                             rd_image=rd, ir_image=ir)
             self.assertEqual(merged.shape, (128, 128, 4))
             np.testing.assert_allclose(merged[0, 0], np.array([17, 83, 161, 85]) / 255, atol=1e-6)
@@ -53,6 +53,22 @@ class PipelineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             with self.assertRaisesRegex(ValueError, "dimensions"):
                 prepare_images(snapshots, Path(temporary))
+
+    def test_reject_truncated_jpeg_that_still_has_a_valid_image_header(self):
+        snapshots = sample_images()
+        noise = np.random.default_rng(42).integers(0, 256, (800, 800, 3), dtype=np.uint8)
+        buffer = io.BytesIO()
+        Image.fromarray(noise, "RGB").save(buffer, format="JPEG", quality=90)
+        content = buffer.getvalue()
+        snapshots["IR"].content = content[:len(content) // 2]
+        # The header still passes the old format/mode checks, unlike a random file.
+        with Image.open(io.BytesIO(snapshots["IR"].content)) as image:
+            self.assertEqual(image.size, (800, 800))
+            self.assertEqual(image.format, "JPEG")
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(ValueError, "Incomplete or invalid IR"):
+                prepare_images(snapshots, Path(temporary))
+            self.assertFalse((Path(temporary) / "inputs" / "IR.png").exists())
 
     def test_fetch_records_provenance_and_does_not_load_predictor(self):
         snapshots = sample_images()
@@ -77,16 +93,26 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(len(manifests), 1)
             self.assertEqual(json.loads(manifests[0].read_text())["status"], "failed")
 
-    def test_ra_config_and_unrelated_checkpoint_fallback_are_rejected(self):
+    def test_ra_encoding_and_unrelated_checkpoint_fallback_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "config.json"
-            path.write_text(json.dumps({"data": {"use_ra": True}}))
-            with self.assertRaisesRegex(ValueError, "RA/GI"):
+            path.write_text(json.dumps({"data": {"use_ra": True}, "model": {"num_classes": 100}}))
+            with self.assertRaisesRegex(ValueError, "101-class"):
                 load_prediction_config(path)
             (Path(temporary) / "OtherModel.h5").touch()
             path.write_text(json.dumps({"model": {"name": "Unet3", "checkpoint_dir": temporary}}))
             with self.assertRaises(FileNotFoundError):
                 load_prediction_config(path)
+
+    def test_missing_bundled_weights_requests_restore_instead_of_training(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "config.json"
+            missing = Path(temporary) / "Unet3_val_min_RMSE.h5"
+            path.write_text(json.dumps({"model": {"checkpoint_path": str(missing)}}))
+            with self.assertRaises(FileNotFoundError) as error:
+                load_prediction_config(path)
+            self.assertIn("Restore the pretrained checkpoint", str(error.exception))
+            self.assertNotIn("train_realtime.py", str(error.exception))
 
 
 if __name__ == "__main__":

@@ -1,366 +1,108 @@
 # Predicting-Typhoon-Rainfall
 
-## 專案用途
+以 RD 雷達回波、IR 紅外線雲圖、RA 雨量分布與 GI 經緯度圖，展示多模態神經網路的下一小時降雨預測。專案隨附已訓練的輕量 Unet3 權重，一般使用不需要重新訓練。
 
-以多源影像神經網路預測颱風期間降雨量的研究專案，本研究使用多種氣象影像作為輸入，預測未來時間點的雨量分布標籤。
+| 輸入 | 內容 | 通道數 |
+| --- | --- | ---: |
+| RD | RGB雷達回波 | 3 |
+| IR | 灰階紅外線雲圖 | 1 |
+| RA | 逐時測站雨量經IDW內插，灰階複製三層 | 3 |
+| GI | 原始LON／LAT灰階圖 | 2 |
+| 合計 | 128×128格網 | 9 |
 
-主要影像來源：
+隨附模型為論文概念的簡易復現示範。歷史測試RMSE與持續性預報接近，高雨量有低估；流程可執行不代表已完成現行天氣的預報能力驗收。[模型與評估摘要](docs/research/multimodal-unet3-2026-11-06.md)
 
-- `RA`：雨量分布圖
-![image_RA](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RA.png)
-- `RD`：雷達回波圖
-![image_RD](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_RD.png)
-- `IR`：紅外線雲圖
-![image_IR](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271130_IR.png)
-- `GI`：經緯度輔助圖，包含 `lon.png` 與 `lat.png`
-- 預測出來的雨量分布圖 (RA+RD+IR)
-![image_pred](https://github.com/Jwander0820/Predicting-Typhoon-Rainfall/blob/master/img/201609271030_t%2B1_predict.png)
+## 安裝與執行
 
-目前主要支援：
+所有流程共用 **Python 3.9.x、TensorFlow 2.9.1** 及同一份 `requirement.txt`。在專案根目錄、同一個Python環境安裝並執行：
 
-- 模型訓練
-- 驗證集評估
-- 離線推論
-- 實驗性即時氣象圖 crawler 推論
+```powershell
+python -m pip install -r requirement.txt
+python run_realtime.py
+```
 
-另提供獨立的[即時預測外掛](docs/realtime-plugin.md)，使用現行中央氣象署免登入圖源，沿用既有模型、權重及推論 API：
+若已使用專案 `.venv`，可直接指定它：
 
-```bash
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirement.txt
+.\.venv\Scripts\python.exe run_realtime.py
+```
+
+CPU可以推論，GPU是可選加速。請保留 `checkpoint/Unet3_val_min_RMSE.h5`、同名 `.metadata.json` 及 `database.zip`。即時流程只讀取ZIP內兩張GI圖，不需要先解壓或準備完整歷史資料。
+
+`run_realtime.py` 不帶參數時會取得測站雨量、產生RA、配對RD／IR、加入GI、載入權重並產生預測，不會自動訓練。預設設定為 `configs/realtime.json`；`configs/default.json` 也使用相同九通道、101類Unet3權重。
+
+## 預報時間與結果
+
+例如取得17:00–18:00的完整觀測RA，配對17:30的RD／IR，輸出 **18:00–19:00累積雨量**。資料發布有延遲，執行完成時預報區間可能已開始；它不是從執行時刻起算60分鐘。程式會拒絕未完成觀測、過期資料及已結束的預報區間。
+
+每次結果放在 `output/realtime/<執行時間>_predict/`：
+
+- `forecast.png`：前一小時觀測與下一小時預測對照。
+- `prediction_mm.csv`：逐格預測毫米，海面為NaN；類別100表示100mm以上。
+- `manifest.json`：來源、觀測／預報時段、模型指紋與執行狀態。
+- `inputs/`：真正送入模型的RD、IR、RA、LON、LAT五張圖。
+- 原圖、RA中間結果、定位及對齊檢核檔供研究追查；`alignment.png` 的紫色輪廓只供目視參考，不會畫入模型輸入。
+
+整個 `output/` 已被Git忽略。各次結果會保留，不會自動清除。
+
+## 其他操作
+
+```powershell
+python run_realtime.py --help
 python run_realtime.py fetch
-python run_realtime.py predict
 python run_realtime.py rainfall --hours 6
+python run_realtime.py ra --observations <rainfall_hourly.json>
 ```
 
-`fetch` 只抓圖及前處理；`predict` 執行一次 RD＋IR 的 `t+1` 預測；`rainfall` 匯出全臺近期逐時測站雨量，並以獨立 IDW 算法產生逐小時 RA 數值、標籤及彩色圖。原有訓練、評估、CLI 和舊 crawler 保持原狀。
+`fetch`只下載與對齊RD／IR；`rainfall`取得最近1–24小時逐時測站資料並產生RA。完整選項見[使用說明](docs/realtime-plugin.md)。
 
-## 環境版本
+## 離線示範與測試
 
-本專案以 TensorFlow `2.9.1` 為固定基準，請不要任意升級 TensorFlow 主版本，避免影響舊 `.h5` 權重載入與研究結果重現。
+單元測試不會訓練模型，也不依賴外網：
 
-建議環境：
-
-```text
-Python      3.9.x
-TensorFlow  2.9.1
-```
-
-安裝依賴：
-
-```bash
-pip install -r requirement.txt
-```
-
-## 快速開始
-
-### 1. 執行單元測試
-
-先確認專案基本設定與資料契約正常：
-
-```bash
+```powershell
 python -m unittest discover -s tests -v
 ```
 
-目前測試不會真的訓練模型，也不依賴外網。
+若要使用隨附歷史示範影像，先將 `database.zip` 解壓到專案根目錄得到 `database/`，再執行：
 
-### 2. 執行少量推論
-
-建議第一次確認模型與環境時，先跑驗證集前 25 筆：
-
-```bash
-python -m typhoon_rainfall predict --config configs/default.json --limit 25
-```
-
-PyCharm 使用者可以直接執行：
-
-```text
-run_predict_sample.py
-```
-
-執行時 console 會印出本次使用的模型、checkpoint、輸入模態、資料 split 與輸出位置。
-
-### 3. 執行完整驗證
-
-```bash
-python -m typhoon_rainfall evaluate --config configs/default.json
-```
-
-PyCharm 使用者可以直接執行：
-
-```text
-run_evaluate.py
-```
-
-### 4. 執行訓練
-
-```bash
-python -m typhoon_rainfall train --config configs/default.json
-```
-
-PyCharm 使用者可以直接執行：
-
-```text
-run_train.py
-```
-
-訓練會花較長時間，第一次測試環境時建議先跑 `run_predict_sample.py`。
-
-
-建議執行順序：
-
-| 檔案 | 用途          | 建議時機                        |
-| --- |-------------|-----------------------------|
-| `run_predict_sample.py` | 推論驗證集前 25 筆 | 第一次測試最推薦                    |
-| `run_evaluate.py` | 跑完整驗證集      | 模型與資料確認後                    |
-| `run_train.py` | 開始訓練        | 環境完整且準備訓練時                  |
-| `predict_1hour_rainfall.py` | 即時抓圖推論      | 實驗性功能(氣象局資料路徑已改，現已無法抓到最新資料) |
-
-
-## CLI 使用方式
-
-正式入口為：
-
-```bash
-python -m typhoon_rainfall <command> --config configs/default.json
-```
-
-可用 command：
-
-```bash
-python -m typhoon_rainfall train --config configs/default.json
-python -m typhoon_rainfall evaluate --config configs/default.json
+```powershell
 python -m typhoon_rainfall predict --config configs/default.json --limit 5
+python -m typhoon_rainfall evaluate --config configs/default.json
 ```
 
-`--config` 也可以放在 command 前面：
+也可在IDE執行 `run_predict_sample.py` 或 `run_evaluate.py`。ZIP是小型示範資料，包含173組訓練清單、55組驗證清單，不是隨附模型使用的完整訓練／測試資料。核心評估入口輸出示範集逐筆類別RMSE，與模型摘要中的完整獨立測試指標需分開閱讀。
 
-```bash
-python -m typhoon_rainfall --config configs/default.json predict --limit 5
-```
-
-若要指定模型，例如改用 `Unet3`：
-
-```bash
-python -m typhoon_rainfall predict --config configs/default.json --model-name Unet3 --limit 5
-```
-
-若要指定 checkpoint：
-
-```bash
-python -m typhoon_rainfall predict \
-  --config configs/default.json \
-  --checkpoint checkpoint/Unet3_val_min_RMSE.h5 \
-  --limit 5
-```
-
-## 核心模組
-
-### `typhoon_rainfall/config.py`
-
-集中管理研究設定：
-
-- `DataConfig`：資料路徑、影像大小、輸入模態、預測時間位移
-- `ModelConfig`：模型名稱、類別數、checkpoint 設定
-- `TrainConfig`：epoch、batch size、learning rate、輸出位置
-- `PredictConfig`：推論輸出位置、split、limit
-- `ProjectConfig`：整合完整專案設定
-
-### `typhoon_rainfall/data/`
-
-負責資料契約與資料載入：
-
-- `contracts.py`：`SamplePair`、`DatasetPaths`、輸入 shape 計算
-- `dataset.py`：讀取 RD / IR / RA / GI，融合 channel，產生 one-hot target
-
-### `typhoon_rainfall/models/`
-
-依照模型名稱建立模型，目前支援：
-
-- `Unet3`
-- `Unet4`
-- `Unet5`
-- `Unet6`
-- `FCN8`
-- `pspnet`
-
-### `typhoon_rainfall/training/`
-
-負責訓練流程：
-
-- 建立模型
-- compile loss 與 metrics
-- 建立訓練與驗證 generator
-- 儲存 checkpoint
-- 輸出 history CSV 與訓練曲線
-
-### `typhoon_rainfall/inference/`
-
-負責推論流程：
-
-- 選擇 checkpoint
-- 載入模型權重
-- 執行模型推論
-- 將 softmax 輸出轉為 label map
-- 儲存 CSV 與 PNG
-
-### `typhoon_rainfall/evaluation/`
-
-負責驗證集推論與摘要輸出。
-
-### `typhoon_rainfall/experimental/`
-
-目前包含即時氣象圖 crawler。此功能依賴外部網站格式，屬於實驗功能，不是核心穩定流程。
-
-## 資料格式
-
-預設資料根目錄：
+離線資料主要結構：
 
 ```text
 database/
+├── train_data_RD/{train,val}/
+├── train_data_IR/{train,val}/
+├── train_data_RA/EWB01/{train,val}/
+├── train_data_GI/{lon.png,lat.png}
+└── train_list/t2t+1/{train.txt,val.txt}
 ```
 
-請先將 `database.zip` 解壓縮到專案根目錄，解壓縮後應得到 `database/` 資料夾。`database/` 中包含訓練與驗證用資料，主要有雨量分布圖 `RA`、雷達回波圖 `RD`、紅外線雲圖 `IR`、經緯度代表 `GI` 四種資料。
+清單每行為 `source.png;target.png`，例如 `201308271130.png;201308271230.png`，表示來源與目標相差一小時。
 
-圖像尺寸皆固定為 `128 x 128 pixel`。這些資料不是原始影像，已經過裁切與縮放處理。原始資料集說明中，`train/` 內包含三場颱風資料，`val/` 內包含一場颱風資料；實際訓練與驗證會依 `train_list/` 中的清單選取 input 與 target。
+## 進階研究：自行訓練
 
-必要結構：
+一般使用不需要此步驟。若持有完整歷史資料，可在同一環境執行：
 
-```text
-database/
-├── train_data_RD/
-│   ├── train/
-│   └── val/
-├── train_data_IR/
-│   ├── train/
-│   └── val/
-├── train_data_RA/
-│   └── EWB01/
-│       ├── train/
-│       └── val/
-├── train_data_GI/
-│   ├── lon.png
-│   └── lat.png
-├── train_list/
-│   └── t2t+1/
-│       ├── train.txt
-│       └── val.txt
-├── val_label_csv_true_value/
-└── val_label_RA_colorimage/
+```powershell
+python train_realtime.py --dataset-root <完整歷史database目錄> --checkpoint checkpoint/Unet3_retrained.h5
 ```
 
-資料內容說明：
+這個入口讀取完整資料的 `N-4/t2t+1`、`train_data_rainfallmap/EWB01`、RD／IR／GI及本島遮罩，訓練九通道、101類Unet3。完整資料不隨Git提供，示範ZIP不能代替它。範例使用不同輸出檔名，避免覆蓋固定示範權重。
 
-| 資料 | 說明 |
-| --- | --- |
-| `RA` | 雨量分布圖，單通道 8-bit 圖像，內部資料為將真值轉換後的標籤值，例如降雨量 `13.67mm` 會轉換為標籤值 `14` |
-| `RD` | 雷達回波圖，三通道圖像，擷取自中央氣象局雷達回波圖 |
-| `IR` | 紅外線雲圖，單通道圖像，擷取自中央氣象局紅外線雲圖 |
-| `GI` | 經緯度代表，單通道圖像，`lat.png` 表示緯度由低到高 `0-254`，`lon.png` 表示經度由左到右 `0-254` |
+核心研究CLI另保留 `train`、`evaluate`、`predict`，共用相同依賴與融合規則。變更模態、類別數或架構時，必須搭配相符訓練權重。
 
-其他資料夾用途：
+## 文件
 
-| 資料夾 | 用途 |
-| --- | --- |
-| `train_list/` | 存放訓練模型時會調用的清單，程式會根據清單選取 input 與 target |
-| `val_label_csv_true_value/` | 存放驗證資料的真值，用於計算 RMSE 等指標 |
-| `val_label_RA_colorimage/` | 存放驗證資料的彩色雨量分布圖，用於視覺化比較與預測結果差異 |
+- [使用說明](docs/realtime-plugin.md)：操作、時間、輸入輸出與來源。
+- [模型與評估摘要](docs/research/multimodal-unet3-2026-11-06.md)：固定模型的訓練、指標與限制。
+- [資料介接規格](docs/research/cwa-data-feasibility-2026-10-30.md)、[RD／IR對齊](docs/research/rd-ir-alignment.md)、[RA參數](docs/research/thesis-ra-parameters.md)：目前實作方法。
 
-`train.txt` 與 `val.txt` 每一行格式：
-
-```text
-source.png;target.png
-```
-
-範例：
-
-```text
-201308271130.png;201308271230.png
-```
-
-代表使用 `201308271130` 的影像作為輸入，預測 `201308271230` 的雨量標籤。
-
-## 輸入通道規則
-
-目前通道融合規則集中於：
-
-```text
-typhoon_rainfall/data/contracts.py
-typhoon_rainfall/data/dataset.py
-```
-
-| 模態 | 通道數 | 說明 |
-| --- | --- | --- |
-| RD | 3 | RGB 雷達回波圖 |
-| IR | 1 或 3 | 與其他模態合併時為 1；單獨使用時展成 3 |
-| RA | 3 | 作為輸入時正規化後複製成 3 channel |
-| GI | 2 | `lon` + `lat` |
-
-預設輸入：
-
-```text
-RD + IR = 4 channels
-```
-
-## Checkpoint 規則
-
-預設 checkpoint 目錄：
-
-```text
-checkpoint/
-```
-
-系統會優先尋找：
-
-```text
-checkpoint/{model_name}_val_min_RMSE.h5
-```
-
-例如：
-
-```text
-checkpoint/Unet5_val_min_RMSE.h5
-checkpoint/Unet3_val_min_RMSE.h5
-```
-
-若標準名稱不存在，系統會 fallback 到 `checkpoint/` 中最新的 `.h5` 檔案。
-
-## 輸出位置
-
-推論輸出：
-
-```text
-output/predict_array/
-output/predict/
-```
-
-驗證摘要：
-
-```text
-output/evaluation_*.csv
-```
-
-訓練輸出：
-
-```text
-checkpoint/
-logs/
-output/model_history_*.csv
-output/model_history_*.png
-```
-
-## 實驗性即時推論
-
-可執行：
-
-```bash
-python predict_1hour_rainfall.py
-```
-
-此流程會嘗試：
-
-1. 依目前時間推算對應氣象圖時間
-2. 下載 IR 與 RD 圖
-3. 裁切並縮放為 `128 x 128`
-4. 載入模型推論
-5. 輸出 CSV 與 PNG
-
-此功能依賴外部氣象網站，氣象局資料路徑已改，現已無法抓到最新資料。正式研究流程請以離線資料訓練與驗證為主。
+評估文件供理解模型表現，不是推論執行所需檔案。詳細本機輸出與訓練報告留在被忽略的 `output/`，公開文件只保留必要摘要。

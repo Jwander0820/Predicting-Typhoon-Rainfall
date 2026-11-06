@@ -1,14 +1,14 @@
 """Checkpoint selection rules.
 
 The project historically saved weights as `{model}_val_min_RMSE.h5`.
-These helpers make that convention explicit and provide a deterministic
-fallback when the preferred file is not present.
+These helpers use that named file or an explicit path. Missing weights never
+fall back to an unrelated model just because its file was modified recently.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 
 def preferred_checkpoint_path(checkpoint_dir: Path, model_name: str) -> Path:
@@ -23,15 +23,14 @@ def resolve_checkpoint(
 ) -> Path:
     """Resolve which checkpoint should be loaded for prediction/evaluation."""
     if explicit_path is not None:
-        if not explicit_path.exists():
+        if not explicit_path.is_file():
             raise FileNotFoundError(f"Checkpoint not found: {explicit_path}")
         return explicit_path
 
     preferred = preferred_checkpoint_path(checkpoint_dir, model_name)
-    if preferred.exists():
+    if preferred.is_file():
         return preferred
-
-    candidates = sorted(checkpoint_dir.glob("*.h5"), key=lambda path: (path.stat().st_mtime, path.name))
-    if not candidates:
-        raise FileNotFoundError(f"No checkpoint files found under: {checkpoint_dir}")
-    return candidates[-1]
+    raise FileNotFoundError(
+        f"Checkpoint for {model_name} not found: {preferred}. "
+        "Supply an explicit checkpoint trained for this model and input configuration."
+    )

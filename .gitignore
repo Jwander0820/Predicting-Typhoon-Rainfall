@@ -172,6 +172,8 @@ dmypy.json
 ## except to ignore
 !/data/*
 /checkpoint/*
+!/checkpoint/Unet3_val_min_RMSE.h5
+!/checkpoint/Unet3_val_min_RMSE.metadata.json
 
-# Live plugin snapshots and generated manifests (may be large).
-/output/realtime/
+# Generated outputs, live snapshots, training runs and local research archives.
+/output/

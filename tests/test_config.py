@@ -13,7 +13,7 @@ class ConfigTests(unittest.TestCase):
             save_project_config(config, output_path)
             loaded = ProjectConfig.from_json(output_path)
             self.assertEqual(loaded.data.shift, 1)
-            self.assertEqual(loaded.model.name, "Unet5")
+            self.assertEqual(loaded.model.name, "Unet3")
             self.assertEqual(str(loaded.model.checkpoint_dir), "checkpoint")
 
 

@@ -22,7 +22,7 @@ class DataConfig:
     """Dataset and input-modality settings.
 
     控制資料根目錄、影像大小、預測時間位移，以及本次實驗要使用
-    哪些輸入模態。預設值對應目前論文研究中最常用的 RD + IR、
+    哪些輸入模態。預設值對應隨附九通道模型的 RD + IR + RA + GI、
     EWB01、t+1 設定。
     """
 
@@ -32,8 +32,8 @@ class DataConfig:
     shift: int = 1
     use_rd: bool = True
     use_ir: bool = True
-    use_ra: bool = False
-    use_gi: bool = False
+    use_ra: bool = True
+    use_gi: bool = True
 
     def train_list_dir(self) -> Path:
         """Return the directory that stores train/validation pair lists."""
@@ -49,8 +49,8 @@ class ModelConfig:
     `checkpoint_dir` 中符合模型名稱的預設權重。
     """
 
-    name: str = "Unet5"
-    num_classes: int = 100
+    name: str = "Unet3"
+    num_classes: int = 101
     checkpoint_dir: Path = Path("checkpoint")
     checkpoint_path: Optional[Path] = None
 
@@ -64,9 +64,9 @@ class TrainConfig:
     validation_batch_size: int = 1
     learning_rate: float = 1e-4
     use_focal_loss: bool = False
-    checkpoint_dir: Path = Path("checkpoint")
-    logs_dir: Path = Path("logs")
-    output_dir: Path = Path("output")
+    checkpoint_dir: Path = Path("output/retraining/checkpoint")
+    logs_dir: Path = Path("output/retraining/logs")
+    output_dir: Path = Path("output/retraining")
 
 
 @dataclass(frozen=True)
@@ -172,6 +172,9 @@ def apply_overrides(config: ProjectConfig, args: Any) -> ProjectConfig:
 
     _override_if_present(data, "interval", args.interval)
     _override_if_present(data, "shift", args.shift)
+    if args.model_name is not None and args.model_name != config.model.name and args.checkpoint is None:
+        # A new architecture must not inherit the bundled Unet3's explicit path.
+        model["checkpoint_path"] = None
     _override_if_present(model, "name", args.model_name)
     _override_if_present(model, "checkpoint_path", args.checkpoint)
     _override_if_present(train, "epochs", args.epochs)

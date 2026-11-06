@@ -23,17 +23,18 @@ class Unet:
         self,
         model_path=None,
         model_image_size=None,
-        num_classes=18,
+        num_classes=101,
         blend=None,
-        RD=None,
-        IR=None,
-        GI=None,
-        RA=None,
+        RD=True,
+        IR=True,
+        GI=True,
+        RA=True,
         choose_model=None,
         backbone="resnet50",
         downsample_factor=8,
     ):
         """Convert historical Unet wrapper arguments into new configs."""
+        # Defaults match the bundled nine-channel, 101-class Unet3 weights.
         del model_image_size, backbone, downsample_factor
         self.data_config = DataConfig(
             interval="EWB01",

@@ -21,18 +21,19 @@ class Predictor:
 
     def __init__(
         self,
-        RD: bool = False,
-        IR: bool = False,
-        RA: bool = False,
-        GI: bool = False,
+        RD: bool = True,
+        IR: bool = True,
+        RA: bool = True,
+        GI: bool = True,
         shift: int = 1,
         choose_model: str = "Unet3",
         interval: str = "EWB01",
-        num_classes: int = 100,
+        num_classes: int = 101,
         blend: bool = False,
         checkpoint_path: Optional[str] = None,
     ) -> None:
         """Translate legacy constructor flags into the new config objects."""
+        # Defaults match the bundled nine-channel, 101-class Unet3 weights.
         data_config = DataConfig(
             interval=interval,
             shift=shift,

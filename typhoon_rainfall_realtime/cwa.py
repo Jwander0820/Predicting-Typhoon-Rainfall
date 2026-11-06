@@ -208,6 +208,75 @@ class CwaClient:
             if manifest.published_at < manifest.observed_at:
                 raise CwaDataError("CWA publication precedes the observation")
 
+    def get_images_for_hour(
+        self,
+        interval_start: datetime,
+        interval_end: datetime,
+        *,
+        now: Optional[datetime] = None,
+        max_age_minutes: float = 90,
+        require_future_target: bool = True,
+    ) -> Dict[str, ImageSnapshot]:
+        """Fetch the RD/IR images at a completed rain hour's midpoint.
+
+        The official dated website filenames declare the observation time in
+        Taiwan time. These are distinct from the mutable latest S3 snapshots;
+        no fallback to newer imagery is permitted. Publication time is unknown
+        for dated files and remains ``None``. Decoding/dimension validation is
+        performed by the shared image preparation pipeline.
+
+        ``max_age_minutes`` applies to the rain interval's end. By default its
+        successor hour must not have ended yet; the caller must still display
+        the actual target interval rather than claim execution-time + 1 hour.
+        """
+        local_times = []
+        for name, value in (("interval_start", interval_start), ("interval_end", interval_end),
+                            ("now", now)):
+            if value is None and name == "now":
+                continue
+            if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+                raise ValueError(name + " must be timezone-aware")
+            local_times.append(value.astimezone(TAIPEI))
+        start, end = local_times[:2]
+        reference = local_times[2] if now is not None else None
+        if end - start != timedelta(hours=1) or any(
+            value.minute or value.second or value.microsecond for value in (start, end)
+        ):
+            raise ValueError("Rain interval must be exactly one whole hour in Taiwan time")
+        if not math.isfinite(max_age_minutes) or max_age_minutes <= 0:
+            raise ValueError("max_age_minutes must be positive and finite")
+
+        def validate_reference(value: datetime) -> None:
+            if end > value:
+                raise DataConsistencyError("Rain interval is not complete yet")
+            if value - end > timedelta(minutes=max_age_minutes):
+                raise StaleDataError("Rain interval is too old for paired imagery")
+            if require_future_target and end + timedelta(hours=1) <= value:
+                raise StaleDataError("The target rain interval has already ended")
+
+        validate_reference(reference if reference is not None else datetime.now(TAIPEI))
+        midpoint = start + timedelta(minutes=30)
+        urls = {
+            "RD": "https://www.cwa.gov.tw/Data/radar/CV1_TW_3600_"
+                  + midpoint.strftime("%Y%m%d%H%M") + ".png",
+            "IR": "https://www.cwa.gov.tw/Data/satellite/TWI_IR1_Gray_800/"
+                  "TWI_IR1_Gray_800-" + midpoint.strftime("%Y-%m-%d-%H-%M") + ".jpg",
+        }
+        snapshots = {}
+        for kind, url in urls.items():
+            content = self.get_bytes(url)
+            signature = b"\x89PNG\r\n\x1a\n" if kind == "RD" else b"\xff\xd8\xff"
+            if not content.startswith(signature):
+                raise CwaDataError(f"CWA dated {kind} resource is not the expected image format")
+            snapshots[kind] = ImageSnapshot(
+                kind=kind, product_id=_PRODUCTS[kind].product_id, image_url=url,
+                observed_at=midpoint, published_at=None,
+                acquired_at=reference if reference is not None else datetime.now(TAIPEI),
+                content=content,
+            )
+        validate_reference(reference if reference is not None else datetime.now(TAIPEI))
+        return snapshots
+
     def get_latest_images(
         self,
         max_age_minutes: float = 90,

@@ -1,0 +1,104 @@
+{
+  "model": "Unet3",
+  "input_shape": [
+    128,
+    128,
+    9
+  ],
+  "num_classes": 101,
+  "lead_hours": 1,
+  "modalities": [
+    "RD",
+    "IR",
+    "RA",
+    "GI"
+  ],
+  "channel_order": [
+    "RD_R",
+    "RD_G",
+    "RD_B",
+    "IR",
+    "RA",
+    "RA",
+    "RA",
+    "longitude",
+    "latitude"
+  ],
+  "normalization": {
+    "RD_IR_GI_divisor": 255,
+    "RA_divisor": 101
+  },
+  "label_encoding": "EWB01 integer millimeters, labels 0..100; class100 means >=100mm",
+  "GI_encoding": "Original 128x128 lon.png/lat.png grayscale values divided by255",
+  "time_basis": "Source filenames are hourly midpoint; target is next hourly midpoint",
+  "checkpoint_sha256": "39e506158bc8a4d344244561dfde0dc185347661b10b437c82d2d276ac323fc8",
+  "training_report": "docs/research/multimodal-unet3-2026-11-06.md",
+  "validation": {
+    "epoch": 13,
+    "loss": 5.358724594116211,
+    "val_land_rmse": 4.024377812197109,
+    "val_nonzero_pixels": 276678,
+    "val_maximum_label": 41
+  },
+  "baselines": {
+    "zero_land_rmse": 7.741342199074274,
+    "persistence_land_rmse": 4.360555410482233,
+    "target_mean_mm": 3.0030685032591315,
+    "target_maximum_mm": 100
+  },
+  "source_train_count": 1045,
+  "source_val_count": 173,
+  "selection_metric": "val_land_rmse",
+  "dataset": {
+    "dataset_root": "output/4_unet-keras_模型建立/database",
+    "splits": {
+      "train": {
+        "pairs": 1045,
+        "annotations": "output/4_unet-keras_模型建立/database/N-4/t2t+1/train.txt",
+        "annotations_sha256": "8e93afe9c1962031287c851301a0ab89e2fc48700cfcb759e6dd67693bd843df",
+        "first_source": "201309192330.png",
+        "last_source": "202011071330.png"
+      },
+      "val": {
+        "pairs": 173,
+        "annotations": "output/4_unet-keras_模型建立/database/N-4/t2t+1/val.txt",
+        "annotations_sha256": "370fdd0c17311b5b1ac8ac5adc04651f2a381ea690c0d07f672815ce9fbfaa0e",
+        "first_source": "201308271130.png",
+        "last_source": "201609151030.png"
+      }
+    },
+    "gi": {
+      "longitude_sha256": "437829497a2a8500bafa635f50c788ab1b2aa75af8c702a2ea1fe5e55b87cb27",
+      "latitude_sha256": "13f9d4cbb861410e6f4b7dfdd8d8936ba4eb4dd99915c0b0afa8b912794b114b"
+    },
+    "land_mask_sha256": "6febbee2e97133a8922cda8443f8beb6433a5650e17cd79165cf3a152b3631a8",
+    "land_pixels": 4700,
+    "limited_training": false,
+    "split_policy": "Original explicit train/val storm lists; no timestamp overlap",
+    "calendar_overflow_filenames": [
+      "201909310030.png",
+      "201909310130.png",
+      "201909310230.png",
+      "201909310330.png",
+      "201909310430.png",
+      "201909310530.png",
+      "201909310630.png",
+      "201909310730.png",
+      "201909310830.png",
+      "201909310930.png",
+      "201909311030.png",
+      "201909311130.png"
+    ],
+    "calendar_overflow_note": "Known original 20190931 filenames retained; interpreted as20191001 only for lead/overlap checks"
+  },
+  "distribution_note": "Frozen pretrained thesis demonstration. Dataset paths describe training provenance and are not inference dependencies.",
+  "test_summary": {
+    "pairs": 232,
+    "storms": 4,
+    "scope": "Original4700mainlandpixels; original floatingmm targets",
+    "rmse_mm": 4.749353252327819,
+    "mae_mm": 2.051795990644142,
+    "persistence_rmse_mm": 4.75435844066931,
+    "note": "Near persistence on test RMSE, underestimates high rainfall; current-weather forecast skill not verified."
+  }
+}

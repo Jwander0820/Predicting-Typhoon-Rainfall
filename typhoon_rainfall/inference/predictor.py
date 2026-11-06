@@ -50,14 +50,14 @@ class RainfallPredictor:
         """Build the configured model and load its checkpoint weights."""
         input_shape = compute_input_shape(self.data_config.image_size, self.input_modes)
         # The model name comes from configs/default.json or a CLI override.
-        # For the default research setup this is usually Unet5.
+        # The bundled demonstration uses nine-channel Unet3.
         model = build_model(
             name=self.model_config.name,
             input_shape=input_shape,
             num_classes=self.model_config.num_classes,
         )
         # If checkpoint_path is None, resolve_checkpoint will first try
-        # checkpoint/{model_name}_val_min_RMSE.h5, then fall back to latest .h5.
+        # checkpoint/{model_name}_val_min_RMSE.h5; missing weights raise an error.
         checkpoint_path = resolve_checkpoint(
             checkpoint_dir=self.model_config.checkpoint_dir,
             model_name=self.model_config.name,

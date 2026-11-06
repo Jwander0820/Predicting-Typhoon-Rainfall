@@ -1,0 +1,18 @@
+{
+  "data": {
+    "dataset_root": "database",
+    "image_size": [128, 128],
+    "interval": "EWB01",
+    "shift": 1,
+    "use_rd": true,
+    "use_ir": true,
+    "use_ra": true,
+    "use_gi": true
+  },
+  "model": {
+    "name": "Unet3",
+    "num_classes": 101,
+    "checkpoint_dir": "checkpoint",
+    "checkpoint_path": "checkpoint/Unet3_val_min_RMSE.h5"
+  }
+}

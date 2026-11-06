@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,7 +17,7 @@ from typhoon_rainfall_realtime.pipeline import (
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CWA live-data plugin for the existing thesis model")
     commands = parser.add_subparsers(dest="command", required=True)
-    for command, description in (("predict", "Download latest RD/IR and run existing weights"),
+    for command, description in (("predict", "Collect RD/IR/RA/GI and predict next-hour rainfall"),
                                  ("fetch", "Download and preprocess RD/IR without loading TensorFlow")):
         child = commands.add_parser(command, help=description)
         child.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
@@ -24,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
         child.add_argument("--max-skew-minutes", type=float, default=20)
         if command == "predict":
             child.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+            child.add_argument("--geography-source", type=Path, help="Original GI ZIP or lon.png/lat.png directory")
+            child.add_argument("--boundary-file", type=Path, help="Use a local mainland boundary GeoJSON")
     rain = commands.add_parser("rainfall", help="Collect observations and generate hourly IDW RA maps")
     rain.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     rain.add_argument("--hours", type=int, choices=range(1, 25), default=6)
@@ -49,6 +52,9 @@ def _generate_ra(args, client, observations, directory):
 
 
 def main(argv=None) -> int:
+    # Keep native TensorFlow diagnostics out of the short user-facing result.
+    # Python exceptions and a failed manifest still report actual failures.
+    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
     arguments = list(sys.argv[1:] if argv is None else argv)
     args = build_parser().parse_args(arguments or ["predict"])
     try:
@@ -92,9 +98,26 @@ def main(argv=None) -> int:
                                    config_path=getattr(args, "config", DEFAULT_CONFIG),
                                    fetch_only=args.command == "fetch",
                                    max_age_minutes=args.max_age_minutes,
-                                   max_skew_minutes=args.max_skew_minutes)
-        print(json.dumps({"output_dir": str(directory), "manifest": str(directory / "manifest.json")},
-                         ensure_ascii=False, indent=2))
+                                   max_skew_minutes=args.max_skew_minutes,
+                                   geography_source=getattr(args, "geography_source", None),
+                                   boundary_file=getattr(args, "boundary_file", None))
+        if args.command == "predict":
+            result = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+            prediction = result["prediction"]
+            print("Prediction completed | " + "+".join(result["model"]["modalities"]))
+            if "target_interval" in prediction:
+                print("Rainfall interval: " + " to ".join(prediction["target_interval"]))
+            else:
+                print("Target time: " + prediction["target_time"])
+            labels = prediction["label_summary"]
+            print(f"Rainfall bins: {labels['minimum']}..{labels['maximum']} mm; "
+                  f"nonzero cells: {labels['nonzero_pixels']}")
+            print("Result: " + str(directory / result["artifacts"].get("forecast", "overview.png")))
+            print("CSV: " + str(directory / result["artifacts"].get("rainfall_mm_csv", "prediction.csv")))
+            print("Manifest: " + str(directory / "manifest.json"))
+        else:
+            print(json.dumps({"output_dir": str(directory), "manifest": str(directory / "manifest.json")},
+                             ensure_ascii=False, indent=2))
         return 0
     except Exception as exc:
         print("Live plugin failed (" + type(exc).__name__ + "): " + str(exc), file=sys.stderr)

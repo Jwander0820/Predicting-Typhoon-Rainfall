@@ -20,8 +20,8 @@ class InputModes:
 
     use_rd: bool = True
     use_ir: bool = True
-    use_ra: bool = False
-    use_gi: bool = False
+    use_ra: bool = True
+    use_gi: bool = True
 
     @classmethod
     def from_data_config(cls, config: DataConfig) -> "InputModes":

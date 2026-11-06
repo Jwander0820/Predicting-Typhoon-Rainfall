@@ -187,7 +187,7 @@ def generate_ra(observations_file, output_dir, boundary, boundary_info, *, grid=
                "thesis_source": "Final thesis section 4.5, printed p.29 / PDF p.42; EWB01 p.28 / PDF p.41",
                "georeferencing_note": "Shared RD/IR/RA target calibrated from archived training RD graticules; exact original RA rasterizer remains unverified.",
                "scope": "Taiwan mainland only; current valid mainland stations, not the historical fixed 556-station list",
-               "note": "Observed hourly RA, not a forecast; not fed into the existing RD+IR weights.", "maps": []}
+               "note": "Observed hourly rainfall reconstructed from station measurements; model forecasts are separate outputs.", "maps": []}
     for (start, end), rows in sorted(groups.items(), key=lambda item: item[0][1], reverse=True):
         station_lon = np.array([row.get("longitude_wgs84") for row in rows], dtype=float)
         station_lat = np.array([row.get("latitude_wgs84") for row in rows], dtype=float)
