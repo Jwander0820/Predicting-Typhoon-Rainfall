@@ -2,6 +2,8 @@
 
 以 RD 雷達回波、IR 紅外線雲圖、RA 雨量分布與 GI 經緯度圖，展示多模態神經網路的下一小時降雨預測。專案隨附已訓練的輕量 Unet3 權重，一般使用不需要重新訓練。
 
+相關期刊論文：[Spatiotemporal deep learning fusion of radar, infrared, and geospatial data for typhoon rainfall estimation in Taiwan](https://link.springer.com/article/10.1007/s12145-025-01985-9)。
+
 | 輸入 | 內容 | 通道數 |
 | --- | --- | ---: |
 | RD | RGB雷達回波 | 3 |
