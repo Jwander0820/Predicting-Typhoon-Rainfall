@@ -44,7 +44,10 @@ CPU可以推論，GPU是可選加速。請保留 `checkpoint/Unet3_val_min_RMSE.
 - `prediction_mm.csv`：逐格預測毫米，海面為NaN；類別100表示100mm以上。
 - `manifest.json`：來源、觀測／預報時段、模型指紋與執行狀態。
 - `inputs/`：真正送入模型的RD、IR、RA、LON、LAT五張圖。
-- 原圖、RA中間結果、定位及對齊檢核檔供研究追查；`alignment.png` 的紫色輪廓只供目視參考，不會畫入模型輸入。
+- `alignment.png`：輸入對齊圖，紫色輪廓只供目視參考。
+- `observed_ra.png`：觀測 RA 彩色雨量圖，含毫米色階；只供閱讀，模型仍使用 `inputs/RA.png` 原始標籤。
+
+預設為簡潔輸出。需要原圖、測站數值及所有中間檔時，執行 `python run_realtime.py --detailed-output`。失敗執行保留診斷資料。
 
 整個 `output/` 已被Git忽略。各次結果會保留，不會自動清除。
 
@@ -98,6 +101,8 @@ python train_realtime.py --dataset-root <完整歷史database目錄> --checkpoin
 ```
 
 這個入口讀取完整資料的 `N-4/t2t+1`、`train_data_rainfallmap/EWB01`、RD／IR／GI及本島遮罩，訓練九通道、101類Unet3。完整資料不隨Git提供，示範ZIP不能代替它。範例使用不同輸出檔名，避免覆蓋固定示範權重。
+
+兩套訓練流程刻意保留：`train_realtime.py` 產生簡化版 Unet3；`run_train.py` 與核心研究CLI保留原始論文研究方法及模型選項，兩者的資料格式、loss與選模方式不同。
 
 核心研究CLI另保留 `train`、`evaluate`、`predict`，共用相同依賴與融合規則。變更模態、類別數或架構時，必須搭配相符訓練權重。
 

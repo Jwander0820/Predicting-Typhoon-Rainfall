@@ -36,6 +36,46 @@ def write_manifest(directory: Path, manifest: dict) -> None:
     temporary.replace(path)
 
 
+def compact_prediction_output(directory: Path, manifest: dict) -> None:
+    """Keep presentation artifacts from this newly created, completed run only."""
+    directory = directory.resolve()
+    if manifest.get("status") != "completed" or manifest.get("operation") != "predict":
+        raise ValueError("Only completed predictions can be compacted")
+    maps = manifest.get("ra", {}).get("maps", [])
+    if maps:
+        source = Path(maps[0]["directory"]).resolve() / "RA_map.png"
+        source.relative_to(directory)
+        shutil.copyfile(source, directory / "observed_ra.png")
+    keep = {"inputs", "alignment.png", "forecast.png", "prediction_mm.csv", "manifest.json",
+            "observed_ra.png", "overview.png"}
+    # Legacy configurations have no hourly forecast or millimeter export.
+    if "forecast" in manifest["artifacts"]:
+        keep.discard("overview.png")
+    else:
+        keep.update({"prediction.png", "prediction.csv"})
+    summary = {key: manifest[key] for key in
+               ("schema_version", "operation", "status", "created_at", "finished_at", "prediction")}
+    summary["output_mode"] = "compact"
+    summary["model"] = {key: manifest["model"][key] for key in ("name", "modalities")}
+    summary["model"]["sha256"] = manifest["model"]["checkpoint_contract"]["sha256"]
+    summary["sources"] = {kind: {key: value[key] for key in
+                           ("image_url", "observed_at", "sha256")} for kind, value in manifest["sources"].items()}
+    summary["artifacts"] = {key: value for key, value in manifest["artifacts"].items() if value in keep}
+    summary["artifacts"].update(inputs="inputs", alignment="alignment.png")
+    if maps:
+        summary["artifacts"]["observed_ra"] = "observed_ra.png"
+    for child in directory.iterdir():
+        if child.name in keep:
+            continue
+        # Never follow a link outside this run when removing intermediate files.
+        child.resolve().relative_to(directory)
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+    write_manifest(directory, summary)
+
+
 def load_prediction_config(path: Path) -> ProjectConfig:
     config = ProjectConfig.from_json(Path(path))
     data = config.data
@@ -209,7 +249,7 @@ def _predict_from_paths(predictor, config, paths):
 def run_images(*, output_root: Path = DEFAULT_OUTPUT, config_path: Path = DEFAULT_CONFIG,
                fetch_only: bool = False, max_age_minutes: float = 90,
                max_skew_minutes: float = 20, client=None, predictor_factory=None,
-               geography_source=None, boundary_file=None, now=None) -> Path:
+               geography_source=None, boundary_file=None, now=None, detailed_output=True) -> Path:
     # Validate the model contract before downloading, but fetch works without TF/checkpoints.
     config = None if fetch_only else load_prediction_config(config_path)
     if now is not None and (now.tzinfo is None or now.utcoffset() is None):
@@ -344,6 +384,8 @@ def run_images(*, output_root: Path = DEFAULT_OUTPUT, config_path: Path = DEFAUL
             manifest["status"] = "completed"
         manifest["finished_at"] = datetime.now(TAIPEI).isoformat()
         write_manifest(directory, manifest)
+        if not fetch_only and not detailed_output:
+            compact_prediction_output(directory, manifest)
         return directory
     except Exception as exc:
         manifest["status"] = "failed"

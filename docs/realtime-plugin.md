@@ -38,7 +38,9 @@ python run_realtime.py
 
 ## 輸出
 
-每次建立 `output/realtime/<執行時間>_predict/`，保留完整快照，不覆蓋前次結果，也沒有自動清除。
+每次建立 `output/realtime/<執行時間>_predict/`，不覆蓋前次結果。預設成功後只保留 `forecast.png`、`prediction_mm.csv`、摘要 `manifest.json`、`inputs/`、`alignment.png` 與 `observed_ra.png`。後者是 IDW 觀測 RA 的彩色毫米圖，並非送入模型的標籤圖，也不是官方雨量圖。
+
+使用 `python run_realtime.py --detailed-output` 保留下列完整快照。失敗執行仍保留診斷資料；不清除任何先前執行目錄。
 
 | 檔案／目錄 | 用途 |
 | --- | --- |

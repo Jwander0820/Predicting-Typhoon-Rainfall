@@ -24,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
         child.add_argument("--max-age-minutes", type=float, default=90)
         child.add_argument("--max-skew-minutes", type=float, default=20)
         if command == "predict":
+            child.add_argument("--detailed-output", action="store_true", help="Keep raw data and diagnostic artifacts")
             child.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
             child.add_argument("--geography-source", type=Path, help="Original GI ZIP or lon.png/lat.png directory")
             child.add_argument("--boundary-file", type=Path, help="Use a local mainland boundary GeoJSON")
@@ -100,7 +101,8 @@ def main(argv=None) -> int:
                                    max_age_minutes=args.max_age_minutes,
                                    max_skew_minutes=args.max_skew_minutes,
                                    geography_source=getattr(args, "geography_source", None),
-                                   boundary_file=getattr(args, "boundary_file", None))
+                                   boundary_file=getattr(args, "boundary_file", None),
+                                   detailed_output=getattr(args, "detailed_output", True))
         if args.command == "predict":
             result = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
             prediction = result["prediction"]
